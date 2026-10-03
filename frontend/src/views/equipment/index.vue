@@ -55,6 +55,7 @@
             >
               {{ action }}
             </button>
+            <button class="link" type="button" @click="markServiced(row)">登记今日检修</button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -78,6 +79,7 @@ import {
   listEntries,
   moduleMeta,
   runAction as applyAction,
+  updateEntryDetail,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
 
@@ -115,6 +117,18 @@ function openCreate() {
 function runAction(action: string, row: EntryRow) {
   errorMessage.value = ''
   const result = applyAction(meta.key, Number(row.id), action)
+  if (!result.ok) {
+    errorMessage.value = result.message
+    return
+  }
+  reload()
+}
+
+// 更新装备详情里的最近检修日；扑火队伍模块的休整清单会跟着变。
+function markServiced(row: EntryRow) {
+  errorMessage.value = ''
+  const today = new Date().toISOString().slice(0, 10)
+  const result = updateEntryDetail(meta.key, Number(row.id), { 最近检修日: today })
   if (!result.ok) {
     errorMessage.value = result.message
     return

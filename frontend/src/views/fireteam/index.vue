@@ -63,6 +63,41 @@
       </tbody>
     </table>
 
+    <section class="rest-checklist">
+      <h3>队伍休整清单</h3>
+      <p class="page-desc">休整中队伍的装备盘点，跟着消防装备模块的装备详情实时更新。</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>队伍编号</th>
+            <th>队伍名称</th>
+            <th>所属林场</th>
+            <th>休整装备（编号 / 名称 / 状态 / 最近检修日）</th>
+            <th>待检修装备数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in restChecklist" :key="item.队伍编号">
+            <td>{{ item.队伍编号 }}</td>
+            <td>{{ item.队伍名称 }}</td>
+            <td>{{ item.所属林场 }}</td>
+            <td>
+              <span v-if="!item.装备.length">—</span>
+              <ul v-else class="rest-gear">
+                <li v-for="gear in item.装备" :key="gear.id">
+                  {{ gear.装备编号 }} / {{ gear.装备名称 }} / {{ gear.装备状态 }} / {{ gear.最近检修日 }}
+                </li>
+              </ul>
+            </td>
+            <td>{{ item.待检修装备数 }}</td>
+          </tr>
+          <tr v-if="!restChecklist.length">
+            <td colspan="5" class="empty-state">当前没有休整中的队伍</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <footer class="page-foot">
       <span>共 {{ total }} 条扑火队伍记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
@@ -78,6 +113,8 @@ import {
   listEntries,
   moduleMeta,
   runAction as applyAction,
+  teamRestChecklist,
+  type RestChecklistItem,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
 
@@ -91,6 +128,7 @@ const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
+const restChecklist = ref<RestChecklistItem[]>([])
 const filterFields = columns.slice(0, 3)
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
@@ -128,6 +166,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    restChecklist.value = teamRestChecklist()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '扑火队伍列表读取失败'
   }

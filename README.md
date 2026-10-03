@@ -38,6 +38,25 @@ cd frontend
 npm run build
 ```
 
+## 应急演练本地检查流水线
+
+应急演练模块提供可重复的本地开发检查流程，一条命令跑完：
+
+```bash
+cd frontend && npm run check:drill   # 或在仓库根目录 make check-drill
+```
+
+流水线按顺序执行四步：
+
+1. **环境准备**：校验 Node 版本，构建前端依赖（`node_modules` 缺失时自动 `npm install`），并用 esbuild 把数据层打包到 `.check-cache/`。
+2. **演练数据校验**：校验演练主题（非空）、参演队伍（能在扑火队伍模块找到）、演练评价（只取当前演练标准档位）和示例数据（编号格式、字段齐全、状态合法）；同时验证重复装载示例数据不会增加演练记录、旧版本记录能兼容迁移（冲突时以当前演练标准为准，见 `frontend/src/data/drill-standard.ts`）。
+3. **总览与待办核对**：`loadOverview` 的卡片与各模块待办、异常统计逐一对照明细数据。
+4. **跨模块联动**：验证扑火队伍模块的队伍休整清单跟着消防装备模块的装备详情（最近检修日、装备状态）实时更新。
+
+任一步骤失败都会打印诊断编号（如 `E2003` 演练评价不合标准、`E1003` 依赖安装失败，全表见
+`frontend/scripts/lib/diag-codes.mjs`）并写入 `frontend/.drill-check-state.json`；修复后直接重跑
+只会从失败步骤继续，加 `--fresh` 才从头跑。状态文件与 `.check-cache/` 均已 gitignore。
+
 ## 业务模块
 
 | 模块 | 目录 | 业务对象 | 主要字段 |
@@ -66,6 +85,11 @@ npm run build
 - 每个模块的页面在 `frontend/src/views/<模块>/index.vue`，页面只负责渲染，读写统一走
   `frontend/src/api/local-service.ts`。
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
-  `frontend/src/data/seed.ts`。
+  `frontend/src/data/seed.ts`；当前演练标准（评价档位、编号格式、必填字段）在
+  `frontend/src/data/drill-standard.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
+- 本地存储带版本号（当前 v2）：旧版本记录读取时自动迁移，与当前标准冲突的取值以当前标准为准；
+  `loadSampleData(模块)` 按业务编号幂等补装示例数据，重复调用不会增加记录。
+- 装备详情用 `updateEntryDetail` 更新；扑火队伍页面的「队伍休整清单」由 `teamRestChecklist()`
+  实时汇总休整队伍与其所属林场的装备详情，装备一改清单跟着变。
 - 想回到初始数据：清掉浏览器里 `forest-fire-patrol:entries` 这一项，或调用 `resetModule(模块)`。

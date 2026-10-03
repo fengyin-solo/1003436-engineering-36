@@ -85,3 +85,7 @@ desktop.ini
 *.db
 *.pid
 *.seed
+
+# ===== 演练检查流水线本地状态 =====
+frontend/.check-cache/
+frontend/.drill-check-state.json
